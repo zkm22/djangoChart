@@ -66,7 +66,8 @@ export default {
         width: 600,
         height: 400
       },
-      intv: null
+      intv: null,
+      pending: false
     }
   },
   methods: {
@@ -114,34 +115,41 @@ export default {
       })
     },
     getData () {
-      this.axios.all([
-        this.getDataFromSourse1(),
-        this.getDataFromSourse2()
-      ]).then(this.axios.spread((data1, data2) => {
-        let data1List = data1.data
-        let data2List = data2.data
-        let sortData1 = data1List.sort((a, b) => {
-          return a.nth - b.nth
+      if (!this.pending) {
+        this.pending = true
+        this.axios.all([
+          this.getDataFromSourse1(),
+          this.getDataFromSourse2()
+        ]).then(this.axios.spread((data1, data2) => {
+          let data1List = data1.data
+          let data2List = data2.data
+          let sortData1 = data1List.sort((a, b) => {
+            return a.nth - b.nth
+          })
+          let sortData2 = data2List.sort((a, b) => {
+            return a.nth - b.nth
+          })
+          this.sessionStorage.save('data1', sortData1)
+          this.sessionStorage.save('data2', sortData2)
+          this.data1 = sortData1
+          this.data2 = sortData2
+          let dataList = []
+          for (let item of sortData1) {
+            dataList.push(item.value)
+          }
+          this.$refs.simpleChart.chart.series[0].setData(dataList)
+          dataList = []
+          for (let item of sortData2) {
+            dataList.push(item.value)
+          }
+          this.$refs.simpleChart.chart.series[1].setData(dataList)
+          this.ready = true
+          this.pending = false
+        })).catch(err => {
+          console.warn(err)
+          this.pending = false
         })
-        let sortData2 = data2List.sort((a, b) => {
-          return a.nth - b.nth
-        })
-        this.sessionStorage.save('data1', sortData1)
-        this.sessionStorage.save('data2', sortData2)
-        this.data1 = sortData1
-        this.data2 = sortData2
-        let dataList = []
-        for (let item of sortData1) {
-          dataList.push(item.value)
-        }
-        this.$refs.simpleChart.chart.series[0].setData(dataList)
-        dataList = []
-        for (let item of sortData2) {
-          dataList.push(item.value)
-        }
-        this.$refs.simpleChart.chart.series[1].setData(dataList)
-        this.ready = true
-      }))
+      }
     }
   },
   created () {
